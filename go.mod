@@ -1,4 +1,4 @@
-module github.com/yue-best-practices/db-handler
+module github.com/Resynz/db-handler
 
 go 1.12
 
