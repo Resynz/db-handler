@@ -136,7 +136,17 @@ func (db *DBHandler) GetOne(bean interface{}, name string, field string, value i
 	}
 	return has, err
 }
-
+func (db *DBHandler) FindOne(bean interface{}, name string, condition *Condition) (bool, error) {
+	session := db.DB.Table(name)
+	if condition.Where != "" {
+		if condition.Params != nil {
+			session = session.Where(condition.Where, condition.Params...)
+		} else {
+			session = session.Where(condition.Where)
+		}
+	}
+	return session.Get(bean)
+}
 func (db *DBHandler) List(bean interface{}, name string, condition *Condition) error {
 	session := db.DB.Table(name)
 	if condition.Where != "" {
@@ -274,4 +284,28 @@ func (db *DBHandler) Flush() error {
 		return db.Redis.FlushDB().Err()
 	}
 	return nil
+}
+
+func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition, size int) (<-chan interface{}, error) {
+	session := db.DB.Table(name)
+	if size > 0 {
+		session = session.BufferSize(size)
+	}
+	if condition.Where != "" {
+		if condition.Params != nil {
+			session = session.Where(condition.Where, condition.Params...)
+		} else {
+			session = session.Where(condition.Where)
+		}
+	}
+
+	c := make(chan interface{}, size)
+	defer close(c)
+	err := session.Iterate(bean, func(idx int, b interface{}) error {
+		c <- b
+		return nil
+	})
+
+	return c, err
+
 }
