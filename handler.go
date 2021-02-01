@@ -286,7 +286,7 @@ func (db *DBHandler) Flush() error {
 	return nil
 }
 
-func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition, size int) (<-chan interface{}, error) {
+func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition, size int) <-chan interface{} {
 	session := db.DB.Table(name)
 	if size > 0 {
 		session = session.BufferSize(size)
@@ -300,12 +300,14 @@ func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition
 	}
 
 	c := make(chan interface{}, size)
-	defer close(c)
-	err := session.Iterate(bean, func(idx int, b interface{}) error {
-		c <- b
-		return nil
-	})
 
-	return c, err
-
+	go func() {
+		defer close(c)
+		err := session.Iterate(bean, func(idx int, b interface{}) error {
+			c <- b
+			return nil
+		})
+		c <- err
+	}()
+	return c
 }
