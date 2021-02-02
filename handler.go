@@ -270,13 +270,13 @@ func (db *DBHandler) SumsInt(bean interface{}, name string, condition *Condition
 	return db.DB.Table(name).Where(condition.Where, condition.Params...).SumsInt(bean, columnNames...)
 }
 
-func (db *DBHandler) Exec(sql string, params ...interface{}) error {
-	_, err := db.DB.Exec(sql, params)
+func (db *DBHandler) Exec(sql string) error {
+	_, err := db.DB.Exec(sql)
 	return err
 }
 
-func (db *DBHandler) Query(sql string, params ...interface{}) ([]map[string]interface{}, error) {
-	return db.DB.QueryInterface(sql, params)
+func (db *DBHandler) Query(sql string) ([]map[string]interface{}, error) {
+	return db.DB.QueryInterface(sql)
 }
 
 func (db *DBHandler) Flush() error {
