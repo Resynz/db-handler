@@ -295,6 +295,13 @@ func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition
 			session = session.Where(condition.Where)
 		}
 	}
+	if condition.Asc != nil {
+		session = session.Asc(condition.Asc...)
+	}
+
+	if condition.Desc != nil {
+		session = session.Desc(condition.Desc...)
+	}
 	c := make(chan interface{})
 	go func() {
 		defer close(c)
