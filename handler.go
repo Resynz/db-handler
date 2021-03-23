@@ -172,6 +172,31 @@ func (db *DBHandler) List(bean interface{}, name string, condition *Condition) e
 	return session.Find(bean)
 }
 
+func (db *DBHandler) ListAndCount(bean interface{}, name string, condition *Condition) (int64, error) {
+	session := db.DB.Table(name)
+	if condition.Where != "" {
+		if condition.Params != nil {
+			session = session.Where(condition.Where, condition.Params...)
+		} else {
+			session = session.Where(condition.Where)
+		}
+	}
+
+	if condition.Asc != nil {
+		session = session.Asc(condition.Asc...)
+	}
+
+	if condition.Desc != nil {
+		session = session.Desc(condition.Desc...)
+	}
+
+	if condition.Limit > 0 {
+		session = session.Limit(condition.Limit, condition.Offset)
+	}
+
+	return session.FindAndCount(bean)
+}
+
 func (db *DBHandler) Save(bean interface{}, name string, idName ...string) error {
 	value := reflect.ValueOf(bean)
 	if value.Kind() != reflect.Ptr || value.Elem().Kind() != reflect.Struct {
