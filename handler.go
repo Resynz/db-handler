@@ -323,7 +323,8 @@ func (db *DBHandler) Flush() error {
 }
 
 func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition) <-chan interface{} {
-	session := db.DB.Table(name)
+	ss := db.DB.NewSession()
+	session := ss.Table(name)
 	if condition.Where != "" {
 		if condition.Params != nil {
 			session = session.Where(condition.Where, condition.Params...)
@@ -341,6 +342,7 @@ func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition
 	c := make(chan interface{})
 	go func() {
 		defer close(c)
+		defer ss.Close()
 		err := session.Iterate(bean, func(idx int, b interface{}) error {
 			c <- b
 			return nil
