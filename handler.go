@@ -35,6 +35,8 @@ func createDBConnection(dsn string, showSql bool) (*xorm.Engine, error) {
 	if showSql {
 		db.ShowSQL(showSql)
 	}
+	db.SetConnMaxLifetime(time.Hour * 24)
+	db.SetMaxIdleConns(10)
 	return db, nil
 }
 
