@@ -329,10 +329,14 @@ func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition
 		session = session.Where(condition.Where, condition.Params...)
 	}
 	count, err := session.Count()
-	if err != nil || count == 0 {
-		return nil
-	}
 	c := make(chan interface{})
+
+	if err != nil || count == 0 {
+		go func() {
+			defer close(c)
+		}()
+		return c
+	}
 	go func() {
 		defer close(c)
 		limit := 5000
