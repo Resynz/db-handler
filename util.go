@@ -92,11 +92,3 @@ func beanToBeans(bean interface{}) interface{} {
 	v := reflect.MakeSlice(st, 0, 0)
 	return v.Addr().Interface()
 }
-
-func beansToSlice(beans interface{}) []interface{} {
-	v := reflect.ValueOf(beans)
-	ve := v.Elem()
-	v.
-		ve.Len()
-	res := make([]interface{}, ve.Len())
-}
