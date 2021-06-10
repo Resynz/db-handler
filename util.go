@@ -89,6 +89,6 @@ func StringArrayContains(arr []string, item string) bool {
 func beanToBeans(bean interface{}) interface{} {
 	t := reflect.TypeOf(bean)
 	st := t.Elem()
-	v := reflect.MakeSlice(st, 0, 0)
+	v := reflect.MakeSlice(reflect.SliceOf(st), 0, 0)
 	return v.Addr().Interface()
 }
