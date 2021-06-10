@@ -6,6 +6,7 @@ import (
 	"github.com/go-redis/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/xorm"
+	"math"
 	"reflect"
 	"time"
 )
@@ -35,8 +36,6 @@ func createDBConnection(dsn string, showSql bool) (*xorm.Engine, error) {
 	if showSql {
 		db.ShowSQL(showSql)
 	}
-	db.SetConnMaxLifetime(time.Hour * 24)
-	db.SetMaxIdleConns(10)
 	return db, nil
 }
 
@@ -324,32 +323,49 @@ func (db *DBHandler) Flush() error {
 	return nil
 }
 
-func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition) <-chan interface{} {
-	ss := db.DB.NewSession()
-	session := ss.Table(name)
-	if condition.Where != "" {
-		if condition.Params != nil {
-			session = session.Where(condition.Where, condition.Params...)
-		} else {
-			session = session.Where(condition.Where)
-		}
+func (db *DBHandler) Iterate(name string, condition *Condition) <-chan interface{} {
+	session := db.DB.Table(name)
+	if condition != nil {
+		session = session.Where(condition.Where, condition.Params...)
 	}
-	if condition.Asc != nil {
-		session = session.Asc(condition.Asc...)
-	}
-
-	if condition.Desc != nil {
-		session = session.Desc(condition.Desc...)
+	count, err := session.Count()
+	if err != nil || count == 0 {
+		return nil
 	}
 	c := make(chan interface{})
 	go func() {
 		defer close(c)
-		defer ss.Close()
-		err := session.Iterate(bean, func(idx int, b interface{}) error {
-			c <- b
-			return nil
-		})
-		c <- err
+		limit := 5000
+		num := int(math.Ceil(float64(count) / float64(limit)))
+		for i := 0; i < num; i++ {
+			var list []interface{}
+			offset := i * limit
+			s := db.DB.Table(name)
+			if condition != nil {
+				if condition.Where != "" {
+					if condition.Params != nil {
+						s = s.Where(condition.Where, condition.Params...)
+					} else {
+						s = s.Where(condition.Where)
+					}
+				}
+
+				if condition.Asc != nil {
+					s = s.Asc(condition.Asc...)
+				}
+
+				if condition.Desc != nil {
+					s = s.Desc(condition.Desc...)
+				}
+			}
+			err = s.Limit(limit, offset).Find(&list)
+			if err != nil {
+				return
+			}
+			for ii := range list {
+				c <- list[ii]
+			}
+		}
 	}()
 	return c
 }
