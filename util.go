@@ -1,6 +1,9 @@
 package db_handler
 
-import "strings"
+import (
+	"reflect"
+	"strings"
+)
 
 // camel string to snake string  XxYy = > xx_yy
 func ToSnakeString(s string) string {
@@ -81,4 +84,19 @@ func StringArrayContains(arr []string, item string) bool {
 		}
 	}
 	return false
+}
+
+func beanToBeans(bean interface{}) interface{} {
+	t := reflect.TypeOf(bean)
+	st := t.Elem()
+	v := reflect.MakeSlice(st, 0, 0)
+	return v.Addr().Interface()
+}
+
+func beansToSlice(beans interface{}) []interface{} {
+	v := reflect.ValueOf(beans)
+	ve := v.Elem()
+	v.
+		ve.Len()
+	res := make([]interface{}, ve.Len())
 }

@@ -323,7 +323,7 @@ func (db *DBHandler) Flush() error {
 	return nil
 }
 
-func (db *DBHandler) Iterate(name string, condition *Condition) <-chan interface{} {
+func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition) <-chan interface{} {
 	session := db.DB.Table(name)
 	if condition != nil {
 		session = session.Where(condition.Where, condition.Params...)
@@ -338,7 +338,7 @@ func (db *DBHandler) Iterate(name string, condition *Condition) <-chan interface
 		limit := 5000
 		num := int(math.Ceil(float64(count) / float64(limit)))
 		for i := 0; i < num; i++ {
-			var list []interface{}
+			list := beanToBeans(bean)
 			offset := i * limit
 			s := db.DB.Table(name)
 			if condition != nil {
@@ -358,12 +358,14 @@ func (db *DBHandler) Iterate(name string, condition *Condition) <-chan interface
 					s = s.Desc(condition.Desc...)
 				}
 			}
-			err = s.Limit(limit, offset).Find(&list)
+			err = s.Limit(limit, offset).Find(list)
 			if err != nil {
 				return
 			}
-			for ii := range list {
-				c <- list[ii]
+			rv := reflect.ValueOf(list).Elem()
+			ic := rv.Len()
+			for ii := 0; ii < ic; ii++ {
+				c <- rv.Index(ii).Addr().Interface()
 			}
 		}
 	}()
