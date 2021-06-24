@@ -209,15 +209,15 @@ func (db *DBHandler) ListAndCount(bean interface{}, name string, condition *Cond
 	return session.FindAndCount(bean)
 }
 
-func (db *DBHandler) Save(bean interface{}, name string, idName ...string) error {
+func (db *DBHandler) Save(bean interface{}, name string, colsName ...string) error {
 	value := reflect.ValueOf(bean)
 	if value.Kind() != reflect.Ptr || value.Elem().Kind() != reflect.Struct {
 		return fmt.Errorf("struct pointer expected")
 	}
 	defaultIdName := "Id"
-	if idName != nil {
-		defaultIdName = idName[0]
-	}
+	//if idName != nil {
+	//	defaultIdName = idName[0]
+	//}
 	camelId := ToCamelString(defaultIdName)
 	snakeId := ToSnakeString(defaultIdName)
 	value = value.Elem()
@@ -231,9 +231,16 @@ func (db *DBHandler) Save(bean interface{}, name string, idName ...string) error
 		}
 	} else {
 		//update
-		_, err = db.DB.Table(name).Where(fmt.Sprintf("%s=?", snakeId), idValue).AllCols().Update(bean)
-		if err != nil {
-			return err
+		if colsName == nil || len(colsName) == 0 {
+			_, err = db.DB.Table(name).Where(fmt.Sprintf("%s=?", snakeId), idValue).AllCols().Update(bean)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = db.DB.Table(name).Where(fmt.Sprintf("%s=?", snakeId), idValue).Cols(colsName...).Update(bean)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	idValue = fmt.Sprintf("%v", value.FieldByName(camelId))
