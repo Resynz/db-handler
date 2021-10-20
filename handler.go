@@ -27,7 +27,7 @@ func createDBConnection(dsn string, showSql bool) (*xorm.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	db.SetConnMaxLifetime(time.Hour * 4)
 	if err = db.Ping(); err != nil {
 		_ = db.Close()
 		return nil, err
