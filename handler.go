@@ -3,7 +3,6 @@ package db_handler
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"reflect"
 	"time"
 
@@ -335,50 +334,24 @@ func (db *DBHandler) Iterate(bean interface{}, name string, condition *Condition
 	session := db.DB.Table(name)
 	if condition != nil {
 		session = session.Where(condition.Where, condition.Params...)
+		if condition.Asc != nil {
+			session = session.Asc(condition.Asc...)
+		}
+		if condition.Desc != nil {
+			session = session.Desc(condition.Desc...)
+		}
 	}
-	count, err := session.Count()
+
 	c := make(chan interface{})
 
-	if err != nil || count == 0 {
-		go func() {
-			defer close(c)
-		}()
-		return c
-	}
 	go func() {
 		defer close(c)
-		limit := 5000
-		num := int(math.Ceil(float64(count) / float64(limit)))
-		for i := 0; i < num; i++ {
-			list := beanToBeans(bean)
-			offset := i * limit
-			s := db.DB.Table(name)
-			if condition != nil {
-				if condition.Where != "" {
-					if condition.Params != nil {
-						s = s.Where(condition.Where, condition.Params...)
-					} else {
-						s = s.Where(condition.Where)
-					}
-				}
-
-				if condition.Asc != nil {
-					s = s.Asc(condition.Asc...)
-				}
-
-				if condition.Desc != nil {
-					s = s.Desc(condition.Desc...)
-				}
-			}
-			err = s.Limit(limit, offset).Find(list)
-			if err != nil {
-				return
-			}
-			rv := reflect.ValueOf(list).Elem()
-			ic := rv.Len()
-			for ii := 0; ii < ic; ii++ {
-				c <- rv.Index(ii).Addr().Interface()
-			}
+		err := session.Iterate(bean, func(idx int, b interface{}) error {
+			c <- b
+			return nil
+		})
+		if err != nil {
+			c <- nil
 		}
 	}()
 	return c
